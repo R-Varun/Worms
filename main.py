@@ -11,6 +11,9 @@ import sklearn.svm
 import copy
 from worm import *
 
+from sklearn.model_selection import GridSearchCV
+
+
 import pickle
 
 
@@ -38,7 +41,11 @@ def loadDataSet(file, asPythonArr = True, size=(100,100)):
 
 class Classifier:
     def __init__(self, name="model"):
-        self.classifier = sklearn.svm.SVC(kernel="poly", degree=1, gamma='auto', max_iter=-1, verbose=True)
+        # self.classifier = sklearn.svm.SVC(kernel="poly", degree=2, gamma='auto', max_iter=-1, verbose=True)
+        self.classifier = sklearn.svm.SVC(kernel="rbf", max_iter= 100, C=100, verbose=True)
+        # self.classifier = sklearn.svm.SVC(kernel="poly", degree=1, C=1, gamma='auto', max_iter=-1, verbose=True)
+
+        # self.classifier = clf
         self.trainSet = None
         self.name = name
 
@@ -48,7 +55,7 @@ class Classifier:
     def train(self, dataSet, labels):
         ds = self.extract_features(dataSet)
         self.classifier.fit(ds, labels)
-        p = self.predict(dataSet)
+        # p = self.predict(dataSet)
         # print(metrics.accuracy_score(p, labels))
         # print(metrics.f1_score(p, labels, average='micro'))
         pickle.dump(self.classifier, open(self.name, 'wb'))
@@ -57,8 +64,9 @@ class Classifier:
         p = self.predict(dataSet)
         f1 = metrics.f1_score(p, labels, average='micro')
         acc = metrics.accuracy_score(p, labels)
+        conf = metrics.confusion_matrix(p, labels)
 
-        specs = {"F1":f1, "Accuracy":acc}
+        specs = {"F1":f1, "Accuracy":acc, "matrix": conf}
         print(specs)
         return specs
 
@@ -78,8 +86,8 @@ class Classifier:
             i = color.rgb2gray(i)
             i = filters.sobel(i)
 
-            mod = transform.resize(i, (200,200))
-            f, im = feature.hog(mod, orientations=12, pixels_per_cell=(20, 20), cells_per_block=(5, 5), transform_sqrt=True,visualise=True, feature_vector=True, block_norm="L2-Hys")
+            mod = transform.resize(i, (300,300))
+            f, im = feature.hog(mod, orientations=12, pixels_per_cell=(20, 20), cells_per_block=(15, 15), transform_sqrt=True,visualise=True, feature_vector=True, block_norm="L2-Hys")
 
             # plt.imshow(im,cmap="gray")
             # plt.show()
@@ -93,6 +101,17 @@ class Classifier:
         newDataSet = np.asarray(newDataSet)
         return newDataSet
 
+    def crossValidate(self, dataset, labels):
+        parameters = {'kernel': ('rbf',), 'C': [1, 10, 100, 50], 'max_iter': [-1, 10, 20, 30, 40,50]}
+        clf = GridSearchCV(sklearn.svm.SVC(), parameters)
+
+
+        ds = self.extract_features(dataset)
+
+        clf.fit(ds, labels)
+        order = clf.best_params_
+        print(order)
+
 
 
 def sliding_window(image, stepSize, windowSize):
@@ -103,41 +122,81 @@ def sliding_window(image, stepSize, windowSize):
 			yield (x, y, image[y:y + windowSize[1], x:x + windowSize[0]])
 
 
+def sliding_window_pyramid(image, stepSize, windowSizePyramid):
+    for windowSize in windowSizePyramid:
+        # slide a window across the image
+        for y in range(0, image.shape[0] - windowSize[0] + 1, stepSize):
+            for x in range(0, image.shape[1]- windowSize[1]+ 1, stepSize):
+                # yield the current window
+                yield (x, y, image[y:y + windowSize[1], x:x + windowSize[0]])
+
+
+
+
+shouldTrainWorm = False
+shouldTrainChamber = False
 
 
 
 def analyze():
-    videodata = skvideo.io.vreader("9.avi")
+    videodata = skvideo.io.vreader("10.avi")
     prevFrame = None
     track = 0
 
 
-    # classifier load
+    # LOAD WORM CLASSIFIER
+
     classifier = Classifier()
-    # worm = loadDataSet("wurm", asPythonArr=True)
-    # not_worm = loadDataSet("not_wurm", asPythonArr=True)
-    #
-    #
-    # dataSet = worm + not_worm
-    # dataSet = np.asarray(dataSet)
-    # labels = ["wurm" for i in worm] + ["not_wurm" for i in not_worm]
-    #
-    # classifier.train(dataSet, labels)
-    #
-    #
-    # test_worm = loadDataSet("test/wurm", asPythonArr=True)
-    # test_not_worm = loadDataSet("test/not_wurm", asPythonArr=True)
-    #
-    # test_data = test_worm + test_not_worm
-    # test_data = np.asarray(test_data)
-    # test_labels = ["wurm" for i in test_worm] + ["not_wurm" for i in test_not_worm]
-    # classifier.test(test_data, test_labels)
+    if shouldTrainWorm:
+        worm = loadDataSet("wurm", asPythonArr=True)
+        not_worm = loadDataSet("not_wurm", asPythonArr=True)
+        dataSet = worm + not_worm
+        dataSet = np.asarray(dataSet)
+        labels = ["wurm" for i in worm] + ["not_wurm" for i in not_worm]
+
+        classifier.train(dataSet, labels)
+        # classifier.crossValidate(dataSet, labels)
+        # classifier.load()
+
+        # TEST WORM CLASSIFIER
+        test_worm = loadDataSet("test/wurm", asPythonArr=True)
+        test_not_worm = loadDataSet("test/not_wurm", asPythonArr=True)
+
+        test_data = test_worm + test_not_worm
+        test_data = np.asarray(test_data)
+
+        test_labels = ["wurm" for i in test_worm] + ["not_wurm" for i in test_not_worm]
+        classifier.test(test_data, test_labels)
+        print("end train")
+
+
     classifier.load()
 
 
+    chamber_classifier = Classifier(name="chambers")
+    if shouldTrainChamber:
+        chamber = loadDataSet("chamber", asPythonArr=True)
+        not_chamber = loadDataSet("not_chamber", asPythonArr=True)
+        dataset = np.asarray(chamber + not_chamber)
+        labels = ["chamber" for i in chamber] + ["not_chamber" for i in not_chamber]
+        chamber_classifier.crossValidate(dataset, labels)
+        chamber_classifier.train(dataset, labels)
+
+
+    chamber_classifier.load()
+    # #
+    # t_chamber = loadDataSet("test/chamber", asPythonArr=True)
+    # t_not_chamber = loadDataSet("test/not_chamber", asPythonArr=True)
+    #
+    # test_data = t_chamber + t_not_chamber
+    # test_data = np.asarray(test_data)
+    # test_labels = ["chamber" for i in t_chamber] + ["not_chamber" for i in t_not_chamber]
+    # chamber_classifier.test(test_data, test_labels)
 
 
     print("DONE TRAINING")
+
+    # return
 
     ww = WormWrangler()
 
@@ -148,17 +207,40 @@ def analyze():
         if not (frame_count % 20 == 0):
             continue
 
-        mod = transform.resize(frame, (1000,1000))
+        mod = transform.resize(frame, (100,100))
+        plt.imshow(mod)
+        plt.show()
         drawVer = copy.deepcopy(mod)
 
         mod = color.rgb2grey(mod)
+        slides = sliding_window_pyramid(mod, 5, ((30,30),))
 
 
-        slides = sliding_window(mod, 50, (100,100))
 
         fig, ax = plt.subplots()
 
+        for f in slides:
+            x, y, img  = f
+            ans = chamber_classifier.predictOne(img)
 
+            if ans == "chamber":
+                shape= img.shape
+                print("CHAMBER DETECTED", shape)
+                c = plt.Rectangle((x, y),img.shape[0], img.shape[1], color='r', fill=False)
+                ax.add_patch(c)
+                # plt.imshow(mod)
+                # plt.show()
+                # plt.imshow(img)
+                # plt.show()
+            else:
+                # print("NOT CHAMBER")
+                pass
+                # plt.imshow(img)
+                # plt.show()
+
+        #
+        # plt.imshow(mod)
+        # plt.show()
         contours = measure.find_contours(mod, .8)
 
         for contour in contours:
@@ -196,12 +278,12 @@ def analyze():
         ww.next()
 
         print(drawVer.shape)
-        # plt.imshow(drawVer)
-        # plt.show()
+        plt.imshow(drawVer)
+        plt.show()
 
         prevFrame = frame
 
-    print(ww.candidates[0].coords)
+    # print(ww.candidates[0].coords)
 
     # writer = skvideo.io.FFmpegWriter("outputvid.mp4", outputdict={
     #     '-vcodec': 'libx264', '-b': '300000000'
@@ -219,7 +301,7 @@ def analyze():
     #     writer.writeFrame(i)
     # writer.close()
 
-    skvideo.io.vwrite("outputvid.mp4", vid)
+    # skvideo.io.vwrite("outputvid.mp4", vid)
     # writer.close()
 
 
@@ -229,4 +311,6 @@ analyze()
 # for frame in videodata:
 #     plt.imshow(frame)
 #     plt.show()
+
+
 
