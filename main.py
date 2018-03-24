@@ -176,22 +176,23 @@ def analyze():
     chamber_classifier = Classifier(name="chambers")
     if shouldTrainChamber:
         chamber = loadDataSet("chamber", asPythonArr=True)
+        chamber_classifier.classifier = sklearn.svm.LinearSVC()
         not_chamber = loadDataSet("not_chamber", asPythonArr=True)
         dataset = np.asarray(chamber + not_chamber)
         labels = ["chamber" for i in chamber] + ["not_chamber" for i in not_chamber]
-        chamber_classifier.crossValidate(dataset, labels)
+        # chamber_classifier.crossValidate(dataset, labels)
         chamber_classifier.train(dataset, labels)
 
 
     chamber_classifier.load()
     # #
-    # t_chamber = loadDataSet("test/chamber", asPythonArr=True)
-    # t_not_chamber = loadDataSet("test/not_chamber", asPythonArr=True)
-    #
-    # test_data = t_chamber + t_not_chamber
-    # test_data = np.asarray(test_data)
-    # test_labels = ["chamber" for i in t_chamber] + ["not_chamber" for i in t_not_chamber]
-    # chamber_classifier.test(test_data, test_labels)
+    t_chamber = loadDataSet("test/chamber", asPythonArr=True)
+    t_not_chamber = loadDataSet("test/not_chamber", asPythonArr=True)
+
+    test_data = t_chamber + t_not_chamber
+    test_data = np.asarray(test_data)
+    test_labels = ["chamber" for i in t_chamber] + ["not_chamber" for i in t_not_chamber]
+    chamber_classifier.test(test_data, test_labels)
 
 
     print("DONE TRAINING")
@@ -207,13 +208,13 @@ def analyze():
         if not (frame_count % 20 == 0):
             continue
 
-        mod = transform.resize(frame, (100,100))
+        mod = transform.resize(frame, (1000,1000))
         plt.imshow(mod)
         plt.show()
         drawVer = copy.deepcopy(mod)
 
         mod = color.rgb2grey(mod)
-        slides = sliding_window_pyramid(mod, 5, ((30,30),))
+        slides = sliding_window_pyramid(mod, 30, ((90,90),))
 
 
 
@@ -226,7 +227,7 @@ def analyze():
             if ans == "chamber":
                 shape= img.shape
                 print("CHAMBER DETECTED", shape)
-                c = plt.Rectangle((x, y),img.shape[0], img.shape[1], color='r', fill=False)
+                c = plt.Rectangle((x, y),img.shape[0], img.shape[1], color='b', fill=False)
                 ax.add_patch(c)
                 # plt.imshow(mod)
                 # plt.show()
