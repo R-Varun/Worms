@@ -1,5 +1,6 @@
 import numpy as np
 from skimage import transform, filters, feature, color, measure, morphology, util, io, draw
+import matplotlib.pyplot as plt
 
 def distance(x1, y1, x2, y2):
     return ((y2-y1)**2 + (x2 - x1)**2)**.5
@@ -7,12 +8,13 @@ def distance(x1, y1, x2, y2):
 class WormCandidate:
     def __init__(self, bitmap, coords, resolution=(480, 680)):
         self.resolution = resolution
+        self.coords = []
+        self.coords.append(coords)
 
         self.frames = []
         self.frames.append(self.processBitmap(bitmap))
 
-        self.coords = []
-        self.coords.append(coords)
+
 
         self.x, self.y = coords
 
@@ -24,7 +26,16 @@ class WormCandidate:
         self.resolution = resolution
 
     def processBitmap(self, bitmap):
-        return color.gray2rgb(transform.resize(bitmap, self.resolution))
+        resized = transform.resize(bitmap, self.resolution)
+        return color.gray2rgb(resized)
+        try:
+            resized = transform.resize(bitmap, self.resolution)
+            return color.gray2rgb(resized)
+        except:
+            print(bitmap.shape)
+            print(self.coords[-1])
+            plt.imshow(bitmap)
+            plt.show()
 
 
     def addFrame(self, bitmap, coords):
@@ -80,6 +91,29 @@ class WormWrangler:
         self.frame_candidates = []
 
 
+
+
+class WormChamber:
+    def __init__(self, center, radius):
+        self.center = center
+        self.radius = radius
+
+    def isInside(self, coord):
+        return distance(coord[0], coord[1], self.center[0], self.center[1]) <= self.radius
+
+
+
+class WormChamberWrangler:
+    def __init__(self, chambers=[]):
+        self.chambers = chambers
+
+    def isInsideChamber(self, coord):
+        for i in self.chambers:
+            if i.isInside(coord):
+                return True
+        return False
+    def add(self, center, radius):
+        self.chambers.append(WormChamber(center, radius))
 
 
 
