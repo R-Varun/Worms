@@ -186,7 +186,7 @@ def trainWorm():
 
 
 def analyze(chamber_type=False):
-    videodata = skvideo.io.vreader("9.avi")
+    videodata = skvideo.io.vreader("10.avi")
     prevFrame = None
     track = 0
 
@@ -273,7 +273,7 @@ def analyze(chamber_type=False):
             # if dx <= 0 or dy <= 0:
             #     continue
             #
-            if dx * dy < 40:
+            if dx * dy < 50:
                 continue
             if not wcr.isInsideChamber(((lx + hx) / 2, (ly + hy) / 2)) and chamber_type:
                 continue
@@ -382,7 +382,7 @@ def findChambers(img, sizemin=50, sizemax=70):
 # output array of centers and radii of circles highlighted
 
 if __name__ == "__main__":
-    analyze(chamber_type=False)
+    analyze(chamber_type=True)
     # trainWorm()
 
 
