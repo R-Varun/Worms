@@ -1,34 +1,19 @@
-
 import argparse
+import copy
+import pickle
 
-import numpy as np
 import sklearn
 import sklearn.ensemble
-from sklearn import metrics
-import matplotlib.pyplot as plt
-import skvideo.io
-from skimage import transform, filters, feature, color, measure, morphology, util, io, draw, exposure
-import os
 import sklearn.svm
-import copy
-from worm import *
-
-from sklearn.model_selection import GridSearchCV
-from skimage.morphology import watershed
-from scipy import ndimage as ndi
-
-
-import pickle
-from skimage.transform import hough_circle, hough_circle_peaks, hough_ellipse
-from skimage.feature import canny
+import skvideo.io
 from skimage.draw import circle_perimeter
-from skimage.util import img_as_ubyte
-
-from skimage.morphology import square
-# import skimage.transform
-# import skvideo.datasets
+from skimage.transform import hough_circle, hough_circle_peaks
+from sklearn import metrics
+from sklearn.model_selection import GridSearchCV
 
 from convnet import *
+from util.worm import *
+
 
 def loadDataSet(file, asPythonArr = True, size=(300,300)):
     dirs = os.listdir(file)

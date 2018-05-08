@@ -18,10 +18,10 @@ from PIL import Image
 
 import torchvision.models as models
 
-def save_checkpoint(state, is_best, filename='checkpoint.pth.tar'):
+def save_checkpoint(state, is_best, filename='models/checkpoint.pth.tar'):
     torch.save(state, filename)
     if is_best:
-        shutil.copyfile(filename, 'model_best.pth.tar')
+        shutil.copyfile(filename, 'models/model_best.pth.tar')
 
 def imshow(img):
     img = img / 2 + 0.5     # unnormalize
@@ -141,8 +141,8 @@ global_model = None
 def loadModel():
     global global_model
     if global_model == None:
-        if os.path.isfile('model_best.pth.tar'):
-            checkpoint = torch.load('model_best.pth.tar')
+        if os.path.isfile('models/model_best.pth.tar'):
+            checkpoint = torch.load('models/model_best.pth.tar')
             nm = Net()
             nm.load_state_dict(checkpoint['state_dict'])
             op = optim.SGD(model.parameters(), lr=0.0001, momentum=0.9)
