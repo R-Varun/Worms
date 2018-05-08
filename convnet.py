@@ -142,7 +142,14 @@ def loadModel():
     global global_model
     if global_model == None:
         if os.path.isfile('models/model_best.pth.tar'):
-            checkpoint = torch.load('models/model_best.pth.tar')
+            checkpoint = None
+            cuda = torch.cuda.is_available()
+            # cuda = False
+            if cuda:
+                checkpoint = torch.load('models/model_best.pth.tar')
+            else:
+                torch.load('my_file.pt', map_location=lambda storage, loc: storage)
+
             nm = Net()
             nm.load_state_dict(checkpoint['state_dict'])
             op = optim.SGD(model.parameters(), lr=0.0001, momentum=0.9)
