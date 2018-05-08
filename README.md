@@ -20,7 +20,7 @@ I have included two models trained for ~ 50 Epochs, achieving 99.81%/97% accurac
 ## Train model
 In order to train a model, simply run `python convnet.py`. This will run some number of iterations; however, if you `ctr + c` to exit the process beforehand, you will be left with the model generated from the last epoch.
 
-# Run Worm Detector
+## Run Worm Detector
 Now that we have a trained model, we can run our worm segmenter. The required parameters are `-input ` and `-output `. These denote the input file and output directory for the segmented videos respectively.
 
 An example run script would be `python main.py -input 8.avi -ouput ./` to analyze a file, `8.avi` in the current working directory and outputting to the current working directory
