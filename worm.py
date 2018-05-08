@@ -5,6 +5,11 @@ import matplotlib.pyplot as plt
 def distance(x1, y1, x2, y2):
     return ((y2-y1)**2 + (x2 - x1)**2)**.5
 
+
+def distance2(coord1, coord2):
+    return distance(coord1[0], coord1[1], coord2[0], coord2[1])
+
+
 class WormCandidate:
     def __init__(self, bitmap, coords, resolution=(480, 680)):
         self.resolution = resolution
@@ -77,18 +82,41 @@ class WormWrangler:
             for i in self.frame_candidates:
                 self.candidates.append(WormCandidate(i[0], i[1]))
         else:
-            matchList = list(self.candidates)
-            for i in self.frame_candidates:
+            matchList = list(self.frame_candidates)
+            for i in self.candidates:
                 if len(matchList) == 0:
-                    self.candidates.append(WormCandidate(i[0], i[1]))
+                    pass
                 else:
-                    best_index, best_match = min(enumerate(matchList), key = lambda x: x[1].index_of_match_coords(i[1]))
-                    best_match.addFrame(i[0], i[1])
-                    print(i[1])
+                    best_index, best_match = min(enumerate(matchList), key = lambda x: i.index_of_match_coords(x[1][1]))
+                    i.addFrame(best_match[0], best_match[1])
                     matchList.pop(best_index)
+
+            for i in matchList:
+                self.candidates.append(WormCandidate(i[0], i[1]))
 
 
         self.frame_candidates = []
+
+    def pruneCandidates(self):
+
+        keep = []
+        for i in range(len(self.candidates)):
+            candidate = self.candidates[i]
+            movement = 0
+            st = candidate.coords[0]
+            for coord in candidate.coords[1:]:
+                movement += distance2(st, coord)
+                st = coord
+            if movement > 50:
+                keep.append(candidate)
+
+        self.candidates = keep
+
+
+
+
+
+
 
 
 
@@ -99,7 +127,7 @@ class WormChamber:
         self.radius = radius
 
     def isInside(self, coord):
-        return distance(coord[0], coord[1], self.center[0], self.center[1]) <= self.radius
+        return distance(coord[0], coord[1], self.center[0], self.center[1]) <= self.radius - 5
 
 
 

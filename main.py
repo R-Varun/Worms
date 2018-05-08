@@ -1,4 +1,5 @@
 
+import argparse
 
 import numpy as np
 import sklearn
@@ -185,8 +186,8 @@ def trainWorm():
     return classifier
 
 
-def analyze(chamber_type=False):
-    videodata = skvideo.io.vreader("10.avi")
+def analyze(input_dir, output_dir="./", chamber_type=False, skip_frames = 10):
+    videodata = skvideo.io.vreader(input_dir)
     prevFrame = None
     track = 0
 
@@ -209,16 +210,6 @@ def analyze(chamber_type=False):
         # chamber_classifier.crossValidate(dataset, labels)
         chamber_classifier.train(dataset, labels)
 
-
-    # chamber_classifier.load()
-    # # #
-    # t_chamber = loadDataSet("test/chamber", asPythonArr=True)
-    # t_not_chamber = loadDataSet("test/not_chamber", asPythonArr=True)
-    #
-    # test_data = t_chamber + t_not_chamber
-    # test_data = np.asarray(test_data)
-    # test_labels = ["chamber" for i in t_chamber] + ["not_chamber" for i in t_not_chamber]
-    # chamber_classifier.test(test_data, test_labels)
     print("DONE TRAINING")
 
     # return
@@ -230,7 +221,7 @@ def analyze(chamber_type=False):
     for frame in videodata:
         # TO SKIP FRAMES
         frame_count += 1
-        if not (frame_count % 20 == 0):
+        if not (frame_count % skip_frames == 0):
             continue
 
         #END SKIP FRAMES
@@ -243,10 +234,11 @@ def analyze(chamber_type=False):
 
         mod = color.rgb2grey(mod)
         thresh = filters.threshold_otsu(mod)
-        bin = mod > thresh
+        # bin = mod > thresh
         # plt.imshow(binary)
         # plt.show()
-        if frame_count == 20 and chamber_type:
+
+        if frame_count == skip_frames and chamber_type:
             circles = findChambers(mod)
             for circle in circles:
                 perimeter =  circle_perimeter(circle[0], circle[1], circle[2])
@@ -259,7 +251,7 @@ def analyze(chamber_type=False):
 
 
         fig, ax = plt.subplots(ncols=1, nrows=1, figsize=(10, 4))
-        contours = measure.find_contours(bin, .95)
+        contours = measure.find_contours(mod, .95)
 
         for contour in contours:
             lx = int(min(contour[:, 1]))
@@ -296,44 +288,24 @@ def analyze(chamber_type=False):
 
                 c = plt.Rectangle((lx -10, ly - 10), hx - lx + 10, hy - ly + 10, color='r', fill=False)
                 ax.add_patch(c)
-                # plt.imshow(mod[ly - 10:hy + 10, lx- 10:hx + 10])
-                # plt.show()
+
                 rr, cc = draw.polygon_perimeter([ly, ly, hy, hy, ly], [lx, hx, hx, lx, lx ])
-                # drawVer[rr, cc] = [0,1,0]
             ax.plot(contour[:, 1], contour[:, 0], linewidth=2)
 
-        # plt.imshow(mod)
-        # plt.show()
 
         ww.next()
 
-
-        print(drawVer.shape)
-        plt.imshow(drawVer)
-        plt.show()
+        print("FRAME:", frame_count)
 
 
 
-    # print(ww.candidates[0].coords)
+    # At the end, create the video
+    ww.pruneCandidates()
+    for i, candidate in enumerate(ww.candidates):
+        vid = np.multiply(np.array(candidate.frames), 255)
 
-    # writer = skvideo.io.FFmpegWriter("outputvid.mp4", outputdict={
-    #     '-vcodec': 'libx264', '-b': '300000000'
-    # })
-    # f =  np.array(ww.candidates[0].frames)
-    # for i in f:
-    #     writer.writeFrame(i)
-    # vid = np.multiply(np.array(ww.candidates[0].frames), 255)
-    # #
-    # writer = skvideo.io.FFmpegWriter("output.mp4", outputdict={
-    #     '-vcodec': 'libx264', '-b': '300000000'
-    # })
-    #
-    # for i in vid:
-    #     writer.writeFrame(i)
-    # writer.close()
-    #
-    # skvideo.io.vwrite("outputvid.mp4", vid)
-    # writer.close()
+        skvideo.io.vwrite("output-" + str(i) + ".mp4", vid)
+        # writer.close()
 
 def clamp(val, lowerbound, upperbound):
     val = min(val, upperbound)
@@ -370,19 +342,19 @@ def findChambers(img, sizemin=50, sizemax=70):
     return circles
 
 
-
-# analyze()
-#
-# videodata = skvideo.io.vreader("outputvid.mp4")
-# for frame in videodata:
-#     plt.imshow(frame)
-#     plt.show()
-
-# input gray image
-# output array of centers and radii of circles highlighted
-
 if __name__ == "__main__":
-    analyze(chamber_type=True)
-    # trainWorm()
+    parser = argparse.ArgumentParser(description='Process some Worms.')
+    parser.add_argument("-input", help="input video directory")
+    parser.add_argument("-output", help="output video directory")
+    parser.add_argument("--chamber", help="whether chambered or not")
+
+    args = parser.parse_args()
+    chamber = False
+    if args.chamber:
+        chamber = True
+
+
+    print(args.input, chamber)
+    analyze(args.input, output_dir=args.output, chamber_type=chamber)
 
 
