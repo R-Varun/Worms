@@ -100,6 +100,7 @@ class WormWrangler:
     def pruneCandidates(self):
 
         keep = []
+        MOVE_THRESHOLD = 1
         for i in range(len(self.candidates)):
             candidate = self.candidates[i]
             movement = 0
@@ -107,7 +108,7 @@ class WormWrangler:
             for coord in candidate.coords[1:]:
                 movement += distance2(st, coord)
                 st = coord
-            if movement > 50:
+            if movement > len(candidate.coords[1:]) * MOVE_THRESHOLD:
                 keep.append(candidate)
 
         self.candidates = keep

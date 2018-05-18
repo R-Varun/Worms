@@ -171,7 +171,7 @@ def trainWorm():
     return classifier
 
 
-def analyze(input_dir, output_dir="./", chamber_type=False, skip_frames = 10):
+def analyze(input_dir, output_dir="./", chamber_type=False, skip_frames = 1):
     videodata = skvideo.io.vreader(input_dir)
     prevFrame = None
     track = 0
@@ -263,7 +263,6 @@ def analyze(input_dir, output_dir="./", chamber_type=False, skip_frames = 10):
             # plt.show()
             # ans = classifier.predictOne(mod[nly:nhy, nlx:nhx])
             ans = predict(mod[nly:nhy, nlx:nhx])
-            print(ans)
             # ans = "wurm"
             if ans == 1:
                 bitmap = mod[nly:nhy, nlx:nhx]
@@ -279,7 +278,6 @@ def analyze(input_dir, output_dir="./", chamber_type=False, skip_frames = 10):
 
 
         ww.next()
-
         print("FRAME:", frame_count)
 
 
@@ -290,6 +288,7 @@ def analyze(input_dir, output_dir="./", chamber_type=False, skip_frames = 10):
         vid = np.multiply(np.array(candidate.frames), 255)
 
         skvideo.io.vwrite("output-" + str(i) + ".mp4", vid)
+        print("VIDEO WRITTEN")
         # writer.close()
 
 def clamp(val, lowerbound, upperbound):
